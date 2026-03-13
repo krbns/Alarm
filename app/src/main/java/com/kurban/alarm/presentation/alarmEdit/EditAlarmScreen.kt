@@ -17,10 +17,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.kurban.alarm.presentation.theme.AlarmTheme
 import com.kurban.alarm.presentation.theme.spacing
 import java.time.DayOfWeek
 import java.time.format.TextStyle
@@ -31,8 +33,9 @@ import java.util.*
 fun EditAlarmScreen(
     alarmId: Long,
     onNavigateBack: () -> Unit,
-    viewModel: EditAlarmViewModel = hiltViewModel()
 ) {
+    val viewModel: EditAlarmViewModel = hiltViewModel()
+
     val state by viewModel.state.collectAsStateWithLifecycle()
     var showTimePicker by remember { mutableStateOf(false) }
 
@@ -46,6 +49,42 @@ fun EditAlarmScreen(
         }
     }
 
+    EditAlarmContent(
+        state = state,
+        onTimeClick = { showTimePicker = true},
+        alarmId = alarmId,
+        onNavigateBack = onNavigateBack,
+        updateLabel = viewModel::updateLabel,
+        saveAlarm = viewModel::saveAlarm,
+        toggleDay = viewModel::toggleDay,
+        toggleVibrate = viewModel::toggleVibrate
+    )
+
+    if (showTimePicker) {
+        TimePickerDialog(
+            initialHour = state.time.hour,
+            initialMinute = state.time.minute,
+            onDismiss = { showTimePicker = false },
+            onConfirm = { hour, minute ->
+                viewModel.updateTime(hour, minute)
+                showTimePicker = false
+            }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun EditAlarmContent(
+    state: EditAlarmState,
+    onTimeClick: () -> Unit,
+    alarmId: Long,
+    onNavigateBack: () -> Unit,
+    updateLabel: (String) -> Unit,
+    saveAlarm: () -> Unit,
+    toggleDay: (DayOfWeek) -> Unit,
+    toggleVibrate: () -> Unit,
+) {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -56,7 +95,7 @@ fun EditAlarmScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { viewModel.saveAlarm() }) {
+                    IconButton(onClick = { saveAlarm() }) {
                         Icon(Icons.Default.Check, contentDescription = "Сохранить")
                     }
                 },
@@ -79,7 +118,7 @@ fun EditAlarmScreen(
                 text = String.format("%02d:%02d", state.time.hour, state.time.minute),
                 fontSize = 72.sp,
                 fontWeight = FontWeight.Light,
-                modifier = Modifier.clickable { showTimePicker = true }
+                modifier = Modifier.clickable { onTimeClick() }
             )
 
             Text(
@@ -92,7 +131,7 @@ fun EditAlarmScreen(
 
             OutlinedTextField(
                 value = state.label,
-                onValueChange = { viewModel.updateLabel(it) },
+                onValueChange = { updateLabel(it) },
                 label = { Text("Название") },
                 placeholder = { Text("Например, Подъём") },
                 modifier = Modifier
@@ -122,7 +161,7 @@ fun EditAlarmScreen(
                     DayChip(
                         day = day,
                         isSelected = day in state.repeatDays,
-                        onClick = { viewModel.toggleDay(day) }
+                        onClick = { toggleDay(day) }
                     )
                 }
             }
@@ -142,14 +181,14 @@ fun EditAlarmScreen(
                 )
                 Switch(
                     checked = state.isVibrate,
-                    onCheckedChange = { viewModel.toggleVibrate() }
+                    onCheckedChange = { toggleVibrate() }
                 )
             }
 
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.doubleExtraLarge))
 
             Button(
-                onClick = { viewModel.saveAlarm() },
+                onClick = { saveAlarm() },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = MaterialTheme.spacing.large)
@@ -157,18 +196,6 @@ fun EditAlarmScreen(
                 Text("Сохранить")
             }
         }
-    }
-
-    if (showTimePicker) {
-        TimePickerDialog(
-            initialHour = state.time.hour,
-            initialMinute = state.time.minute,
-            onDismiss = { showTimePicker = false },
-            onConfirm = { hour, minute ->
-                viewModel.updateTime(hour, minute)
-                showTimePicker = false
-            }
-        )
     }
 }
 
@@ -242,4 +269,21 @@ private fun TimePickerDialog(
             }
         }
     )
+}
+
+@Preview
+@Composable
+private fun EditAlarmScreenPreview() {
+    AlarmTheme {
+        EditAlarmContent(
+            state = EditAlarmState(),
+            onTimeClick = {},
+            alarmId = 0L,
+            onNavigateBack = {},
+            updateLabel = {},
+            saveAlarm = {},
+            toggleDay = {},
+            toggleVibrate = {}
+        )
+    }
 }

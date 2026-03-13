@@ -12,20 +12,9 @@ import android.os.VibratorManager
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.kurban.alarm.notification.AlarmScheduler
 import com.kurban.alarm.presentation.theme.AlarmTheme
-import com.kurban.alarm.presentation.theme.spacing
 import dagger.hilt.android.AndroidEntryPoint
-import java.time.LocalTime
-import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -125,64 +114,5 @@ class AlarmRingActivity : ComponentActivity() {
     override fun onDestroy() {
         super.onDestroy()
         stopAlarm()
-    }
-}
-
-@Composable
-private fun AlarmRingScreen(
-    label: String,
-    onDismiss: () -> Unit,
-    onSnooze: () -> Unit
-) {
-    val currentTime = remember {
-        LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm"))
-    }
-
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Text(
-                text = currentTime,
-                fontSize = 96.sp,
-                fontWeight = FontWeight.Light
-            )
-
-            if (label.isNotEmpty()) {
-                Text(
-                    text = label,
-                    fontSize = 24.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.doubleExtraLarge))
-
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraLarge)
-            ) {
-                Button(
-                    onClick = onSnooze,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.secondary
-                    )
-                ) {
-                    Text("+5 минут", modifier = Modifier.padding(horizontal = MaterialTheme.spacing.large, vertical = MaterialTheme.spacing.small))
-                }
-
-                Button(
-                    onClick = onDismiss,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    )
-                ) {
-                    Text("Отключить", modifier = Modifier.padding(horizontal = MaterialTheme.spacing.large, vertical = MaterialTheme.spacing.small))
-                }
-            }
-        }
     }
 }
