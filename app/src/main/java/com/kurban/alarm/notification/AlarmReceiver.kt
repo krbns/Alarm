@@ -7,9 +7,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import android.os.VibrationEffect
-import android.os.Vibrator
-import android.os.VibratorManager
 import androidx.core.app.NotificationCompat
 import com.kurban.alarm.R
 import com.kurban.alarm.domain.repository.AlarmRepository
@@ -33,14 +30,11 @@ class AlarmReceiver : BroadcastReceiver() {
         val alarmId = intent.getLongExtra(AlarmScheduler.EXTRA_ALARM_ID, -1)
         val label = intent.getStringExtra(AlarmScheduler.EXTRA_ALARM_LABEL) ?: ""
         val vibrate = intent.getBooleanExtra(AlarmScheduler.EXTRA_ALARM_VIBRATE, true)
+        val isSnooze = intent.getBooleanExtra(AlarmScheduler.EXTRA_ALARM_IS_SNOOZE, false)
 
         if (alarmId == -1L) return
 
-        if (vibrate) {
-            startVibration(context)
-        }
-
-        showNotification(context, alarmId, label)
+        showNotification(context, alarmId, label, vibrate)
         openAlarmScreen(context, alarmId, label, vibrate)
 
         CoroutineScope(Dispatchers.IO).launch {
@@ -48,27 +42,16 @@ class AlarmReceiver : BroadcastReceiver() {
             alarm?.let {
                 if (it.isEnabled && it.isRepeating) {
                     alarmScheduler.reschedule(it)
-                } else if (it.isEnabled) {
+                } else if (it.isEnabled && isSnooze) {
                     alarmScheduler.reschedule(it)
+                } else if (it.isEnabled && !it.isRepeating && !isSnooze) {
+                    alarmScheduler.cancel(it)
                 }
             }
         }
     }
 
-    private fun startVibration(context: Context) {
-        val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            val vibratorManager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
-            vibratorManager.defaultVibrator
-        } else {
-            @Suppress("DEPRECATION")
-            context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-        }
-
-        val pattern = longArrayOf(0, 500, 200, 500, 200, 500)
-        vibrator.vibrate(VibrationEffect.createWaveform(pattern, 0))
-    }
-
-    private fun showNotification(context: Context, alarmId: Long, label: String) {
+    private fun showNotification(context: Context, alarmId: Long, label: String, vibrate: Boolean) {
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

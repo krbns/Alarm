@@ -15,9 +15,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kurban.alarm.domain.model.Alarm
 import com.kurban.alarm.presentation.theme.AlarmTheme
@@ -30,7 +29,7 @@ import java.util.*
 fun AlarmListScreen(
     onNavigateToEdit: (Long) -> Unit,
 ) {
-    val viewModel = hiltViewModel<AlarmListViewModel>()
+    val viewModel: AlarmListViewModel = hiltViewModel()
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     AlarmListScreenContent(

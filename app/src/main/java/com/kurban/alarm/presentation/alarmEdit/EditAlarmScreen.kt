@@ -20,7 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kurban.alarm.presentation.theme.AlarmTheme
 import com.kurban.alarm.presentation.theme.spacing
@@ -121,11 +121,19 @@ fun EditAlarmContent(
                 modifier = Modifier.clickable { onTimeClick() }
             )
 
-            Text(
-                text = "Нажмите на время для изменения",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            if (state.isTimeInPast) {
+                Text(
+                    text = "Время уже прошло - будильник сработает завтра",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+            } else {
+                Text(
+                    text = "Нажмите на время для изменения",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
 
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.doubleExtraLarge))
 

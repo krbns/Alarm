@@ -23,7 +23,8 @@ data class EditAlarmState(
     val repeatDays: Set<DayOfWeek> = emptySet(),
     val isVibrate: Boolean = true,
     val isLoading: Boolean = false,
-    val isSaved: Boolean = false
+    val isSaved: Boolean = false,
+    val isTimeInPast: Boolean = false
 )
 
 @HiltViewModel
@@ -58,7 +59,10 @@ class EditAlarmViewModel @Inject constructor(
     }
 
     fun updateTime(hour: Int, minute: Int) {
-        _state.update { it.copy(time = LocalTime.of(hour, minute)) }
+        val newTime = LocalTime.of(hour, minute)
+        val now = LocalTime.now()
+        val isInPast = newTime.isBefore(now) && _state.value.repeatDays.isEmpty()
+        _state.update { it.copy(time = newTime, isTimeInPast = isInPast) }
     }
 
     fun updateLabel(label: String) {
@@ -72,7 +76,9 @@ class EditAlarmViewModel @Inject constructor(
             } else {
                 state.repeatDays + day
             }
-            state.copy(repeatDays = newDays)
+            val now = LocalTime.now()
+            val isInPast = state.time.isBefore(now) && newDays.isEmpty()
+            state.copy(repeatDays = newDays, isTimeInPast = isInPast)
         }
     }
 
@@ -83,6 +89,15 @@ class EditAlarmViewModel @Inject constructor(
     fun saveAlarm() {
         viewModelScope.launch {
             val currentState = _state.value
+            
+            val now = LocalTime.now()
+            val isInPast = currentState.time.isBefore(now) && currentState.repeatDays.isEmpty()
+            
+            if (isInPast) {
+                _state.update { it.copy(isTimeInPast = true) }
+                return@launch
+            }
+            
             val alarm = Alarm(
                 id = currentState.alarmId,
                 time = currentState.time,

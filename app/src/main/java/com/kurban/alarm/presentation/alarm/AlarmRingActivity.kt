@@ -12,9 +12,14 @@ import android.os.VibratorManager
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import com.kurban.alarm.domain.repository.AlarmRepository
+import com.kurban.alarm.notification.AlarmConstants
 import com.kurban.alarm.notification.AlarmScheduler
 import com.kurban.alarm.presentation.theme.AlarmTheme
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -23,16 +28,21 @@ class AlarmRingActivity : ComponentActivity() {
     @Inject
     lateinit var alarmScheduler: AlarmScheduler
 
+    @Inject
+    lateinit var alarmRepository: AlarmRepository
+
     private var mediaPlayer: MediaPlayer? = null
     private var vibrator: Vibrator? = null
+    private var alarmId: Long = -1
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         setupWindow()
 
-        val alarmId = intent.getLongExtra(AlarmScheduler.EXTRA_ALARM_ID, -1)
+        alarmId = intent.getLongExtra(AlarmScheduler.EXTRA_ALARM_ID, -1)
         val label = intent.getStringExtra(AlarmScheduler.EXTRA_ALARM_LABEL) ?: ""
+        val isSnooze = intent.getBooleanExtra(AlarmScheduler.EXTRA_ALARM_IS_SNOOZE, false)
         val vibrate = intent.getBooleanExtra(AlarmScheduler.EXTRA_ALARM_VIBRATE, true)
 
         startAlarmSound()
@@ -43,16 +53,44 @@ class AlarmRingActivity : ComponentActivity() {
                 AlarmRingScreen(
                     label = label,
                     onDismiss = {
-                        stopAlarm()
-                        finish()
+                        handleDismiss()
                     },
                     onSnooze = {
-                        stopAlarm()
-                        finish()
+                        handleSnooze()
                     }
                 )
             }
         }
+    }
+
+    private fun handleDismiss() {
+        stopAlarm()
+        if (alarmId != -1L) {
+            CoroutineScope(Dispatchers.IO).launch {
+                val alarm = alarmRepository.getAlarmById(alarmId)
+                alarm?.let {
+                    if (it.isEnabled && it.isRepeating) {
+                        alarmScheduler.reschedule(it)
+                    } else if (it.isEnabled) {
+                        alarmScheduler.cancel(it)
+                    }
+                }
+            }
+        }
+        finish()
+    }
+
+    private fun handleSnooze() {
+        stopAlarm()
+        if (alarmId != -1L) {
+            CoroutineScope(Dispatchers.IO).launch {
+                val alarm = alarmRepository.getAlarmById(alarmId)
+                alarm?.let {
+                    alarmScheduler.snooze(it, AlarmConstants.SNOOZE_MINUTES)
+                }
+            }
+        }
+        finish()
     }
 
     private fun setupWindow() {
@@ -97,8 +135,7 @@ class AlarmRingActivity : ComponentActivity() {
             getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
         }
 
-        val pattern = longArrayOf(0, 500, 200, 500, 200, 500)
-        vibrator?.vibrate(VibrationEffect.createWaveform(pattern, 0))
+        vibrator?.vibrate(VibrationEffect.createWaveform(AlarmConstants.VIBRATION_PATTERN, 0))
     }
 
     private fun stopAlarm() {

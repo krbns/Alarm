@@ -48,7 +48,8 @@ class AlarmListViewModel @Inject constructor(
     fun toggleAlarm(alarm: Alarm) {
         viewModelScope.launch {
             toggleAlarmUseCase(alarm)
-            if (!alarm.isEnabled) {
+            val newEnabledState = !alarm.isEnabled
+            if (newEnabledState) {
                 alarmScheduler.schedule(alarm.copy(isEnabled = true))
             } else {
                 alarmScheduler.cancel(alarm)

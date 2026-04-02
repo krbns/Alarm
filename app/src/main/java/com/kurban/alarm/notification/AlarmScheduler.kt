@@ -64,9 +64,56 @@ class AlarmScheduler @Inject constructor(
         schedule(alarm)
     }
 
+    fun snooze(alarm: Alarm, minutes: Int = 5): Long {
+        val snoozeTime = System.currentTimeMillis() + minutes * 60 * 1000L
+
+        val intent = Intent(context, AlarmReceiver::class.java).apply {
+            putExtra(EXTRA_ALARM_ID, alarm.id)
+            putExtra(EXTRA_ALARM_LABEL, alarm.label)
+            putExtra(EXTRA_ALARM_VIBRATE, alarm.isVibrate)
+            putExtra(EXTRA_ALARM_IS_SNOOZE, true)
+        }
+
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            (alarm.id + SNOOZE_REQUEST_CODE_OFFSET).toInt(),
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (alarmManager.canScheduleExactAlarms()) {
+                alarmManager.setAlarmClock(
+                    AlarmManager.AlarmClockInfo(snoozeTime, pendingIntent),
+                    pendingIntent
+                )
+            }
+        } else {
+            alarmManager.setAlarmClock(
+                AlarmManager.AlarmClockInfo(snoozeTime, pendingIntent),
+                pendingIntent
+            )
+        }
+
+        return snoozeTime
+    }
+
+    fun cancelSnooze(alarm: Alarm) {
+        val intent = Intent(context, AlarmReceiver::class.java)
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            (alarm.id + SNOOZE_REQUEST_CODE_OFFSET).toInt(),
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        alarmManager.cancel(pendingIntent)
+    }
+
     companion object {
         const val EXTRA_ALARM_ID = "extra_alarm_id"
         const val EXTRA_ALARM_LABEL = "extra_alarm_label"
         const val EXTRA_ALARM_VIBRATE = "extra_alarm_vibrate"
+        const val EXTRA_ALARM_IS_SNOOZE = "extra_alarm_is_snooze"
+        private const val SNOOZE_REQUEST_CODE_OFFSET = 10000
     }
 }
