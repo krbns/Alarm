@@ -43,7 +43,7 @@ fun AlarmListScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun AlarmListScreenContent(
+fun AlarmListScreenContent(
     state: AlarmListState,
     onNavigateToEdit: (Long) -> Unit,
     toggleAlarm: (Alarm) -> Unit,

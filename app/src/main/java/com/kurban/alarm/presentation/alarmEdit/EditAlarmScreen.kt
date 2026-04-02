@@ -75,7 +75,7 @@ fun EditAlarmScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun EditAlarmContent(
+fun EditAlarmContent(
     state: EditAlarmState,
     onTimeClick: () -> Unit,
     alarmId: Long,
