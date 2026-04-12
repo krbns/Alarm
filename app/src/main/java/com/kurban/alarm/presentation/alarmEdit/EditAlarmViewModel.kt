@@ -1,5 +1,6 @@
 package com.kurban.alarm.presentation.alarmEdit
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kurban.alarm.domain.model.Alarm
@@ -108,8 +109,14 @@ class EditAlarmViewModel @Inject constructor(
             )
             val id = saveAlarmUseCase(alarm)
             val savedAlarm = alarm.copy(id = id)
+            Log.d(TAG, "Saving alarm: id=$id, time=${savedAlarm.time}, repeatDays=${savedAlarm.repeatDays}")
             alarmScheduler.schedule(savedAlarm)
+            Log.d(TAG, "Alarm scheduled, canScheduleExactAlarms=${alarmScheduler.canScheduleExactAlarms()}")
             _state.update { it.copy(isSaved = true) }
         }
+    }
+
+    companion object {
+        private const val TAG = "EditAlarmViewModel"
     }
 }

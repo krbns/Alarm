@@ -1,9 +1,13 @@
 package com.kurban.alarm.presentation
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -26,7 +30,12 @@ class MainActivity : ComponentActivity() {
 
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
-    ) { _ -> }
+    ) { permissions ->
+        val exactAlarmDenied = permissions[Manifest.permission.SCHEDULE_EXACT_ALARM] == false
+        if (exactAlarmDenied) {
+            Log.w(TAG, "SCHEDULE_EXACT_ALARM permission denied, using fallback scheduling")
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -84,7 +93,14 @@ class MainActivity : ComponentActivity() {
         }
 
         if (permissions.isNotEmpty()) {
+            Log.d(TAG, "Requesting permissions: $permissions")
             requestPermissionLauncher.launch(permissions.toTypedArray())
+        } else {
+            Log.d(TAG, "All permissions already granted")
         }
+    }
+
+    companion object {
+        private const val TAG = "MainActivity"
     }
 }

@@ -15,37 +15,42 @@ data class Alarm(
 
     fun getNextTriggerTime(): Long {
         val now = java.time.LocalDateTime.now()
-        var triggerDateTime = now.toLocalDate().atTime(time)
+        val currentDayOfWeek = now.dayOfWeek
 
         if (!isRepeating) {
+            var triggerDateTime = now.toLocalDate().atTime(time)
             if (triggerDateTime.isBefore(now)) {
                 triggerDateTime = triggerDateTime.plusDays(1)
             }
-        } else {
-            var daysToAdd = 0
-            val sortedDays = repeatDays.sorted()
-            for (day in sortedDays) {
-                val daysUntil = day.ordinal - now.dayOfWeek.ordinal
-                if (daysUntil > 0) {
-                    daysToAdd = daysUntil
-                    break
-                } else if (daysUntil == 0 && time.isAfter(now.toLocalTime())) {
-                    daysToAdd = 0
-                    break
-                }
-            }
-            if (daysToAdd == 0) {
-                for (day in sortedDays) {
-                    val daysUntil = day.ordinal + 7 - now.dayOfWeek.ordinal
-                    if (daysUntil > 0) {
-                        daysToAdd = daysUntil
-                        break
-                    }
-                }
-            }
-            triggerDateTime = triggerDateTime.plusDays(daysToAdd.toLong())
+            return triggerDateTime.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
         }
 
+        val sortedDays = repeatDays.sortedBy { it.ordinal }
+        
+        var daysToAdd: Long = 7
+
+        for (day in sortedDays) {
+            val daysDiff = day.ordinal - currentDayOfWeek.ordinal
+            if (daysDiff > 0) {
+                daysToAdd = daysDiff.toLong()
+                break
+            } else if (daysDiff == 0 && time.isAfter(now.toLocalTime())) {
+                daysToAdd = 0
+                break
+            }
+        }
+
+        if (daysToAdd == 7L) {
+            for (day in sortedDays) {
+                val daysDiff = day.ordinal + 7 - currentDayOfWeek.ordinal
+                if (daysDiff > 0) {
+                    daysToAdd = daysDiff.toLong()
+                    break
+                }
+            }
+        }
+
+        val triggerDateTime = now.toLocalDate().atTime(time).plusDays(daysToAdd)
         return triggerDateTime.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
     }
 }

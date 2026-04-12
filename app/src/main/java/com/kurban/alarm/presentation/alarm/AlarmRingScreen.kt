@@ -79,6 +79,14 @@ fun AlarmRingScreen(
                     Text("Отключить", modifier = Modifier.padding(horizontal = MaterialTheme.spacing.large, vertical = MaterialTheme.spacing.small))
                 }
             }
+
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
+
+            Text(
+                text = "Для отключения решите 3 задачи",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }

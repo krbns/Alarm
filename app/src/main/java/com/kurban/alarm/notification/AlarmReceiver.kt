@@ -7,6 +7,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.kurban.alarm.R
 import com.kurban.alarm.domain.repository.AlarmRepository
@@ -27,12 +28,19 @@ class AlarmReceiver : BroadcastReceiver() {
     lateinit var alarmScheduler: AlarmScheduler
 
     override fun onReceive(context: Context, intent: Intent) {
+        Log.d(TAG, "AlarmReceiver onReceive triggered")
+
         val alarmId = intent.getLongExtra(AlarmScheduler.EXTRA_ALARM_ID, -1)
         val label = intent.getStringExtra(AlarmScheduler.EXTRA_ALARM_LABEL) ?: ""
         val vibrate = intent.getBooleanExtra(AlarmScheduler.EXTRA_ALARM_VIBRATE, true)
         val isSnooze = intent.getBooleanExtra(AlarmScheduler.EXTRA_ALARM_IS_SNOOZE, false)
 
-        if (alarmId == -1L) return
+        Log.d(TAG, "Alarm triggered: id=$alarmId, label='$label', vibrate=$vibrate, isSnooze=$isSnooze")
+
+        if (alarmId == -1L) {
+            Log.e(TAG, "Invalid alarm ID")
+            return
+        }
 
         showNotification(context, alarmId, label, vibrate)
         openAlarmScreen(context, alarmId, label, vibrate)
@@ -40,6 +48,7 @@ class AlarmReceiver : BroadcastReceiver() {
         CoroutineScope(Dispatchers.IO).launch {
             val alarm = alarmRepository.getAlarmById(alarmId)
             alarm?.let {
+                Log.d(TAG, "Alarm found in DB: enabled=${it.isEnabled}, repeating=${it.isRepeating}")
                 if (it.isEnabled && it.isRepeating) {
                     alarmScheduler.reschedule(it)
                 } else if (it.isEnabled && isSnooze) {
@@ -47,7 +56,7 @@ class AlarmReceiver : BroadcastReceiver() {
                 } else if (it.isEnabled && !it.isRepeating && !isSnooze) {
                     alarmScheduler.cancel(it)
                 }
-            }
+            } ?: Log.w(TAG, "Alarm not found in DB: id=$alarmId")
         }
     }
 
@@ -89,6 +98,7 @@ class AlarmReceiver : BroadcastReceiver() {
             .build()
 
         notificationManager.notify(alarmId.toInt(), notification)
+        Log.d(TAG, "Notification shown for alarm $alarmId")
     }
 
     private fun openAlarmScreen(context: Context, alarmId: Long, label: String, vibrate: Boolean) {
@@ -100,9 +110,11 @@ class AlarmReceiver : BroadcastReceiver() {
             addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
         }
         context.startActivity(fullScreenIntent)
+        Log.d(TAG, "AlarmRingActivity started for alarm $alarmId")
     }
 
     companion object {
+        private const val TAG = "AlarmReceiver"
         const val CHANNEL_ID = "alarm_channel"
     }
 }

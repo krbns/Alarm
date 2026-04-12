@@ -2,6 +2,7 @@ package com.kurban.alarm.presentation.alarm
 
 import android.app.KeyguardManager
 import android.content.Context
+import android.content.Intent
 import android.media.MediaPlayer
 import android.media.RingtoneManager
 import android.os.Build
@@ -15,6 +16,7 @@ import androidx.activity.compose.setContent
 import com.kurban.alarm.domain.repository.AlarmRepository
 import com.kurban.alarm.notification.AlarmConstants
 import com.kurban.alarm.notification.AlarmScheduler
+import com.kurban.alarm.presentation.mathChallenge.MathChallengeScreen
 import com.kurban.alarm.presentation.theme.AlarmTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -34,6 +36,8 @@ class AlarmRingActivity : ComponentActivity() {
     private var mediaPlayer: MediaPlayer? = null
     private var vibrator: Vibrator? = null
     private var alarmId: Long = -1
+    private var label: String = ""
+    private var vibrate: Boolean = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,19 +45,23 @@ class AlarmRingActivity : ComponentActivity() {
         setupWindow()
 
         alarmId = intent.getLongExtra(AlarmScheduler.EXTRA_ALARM_ID, -1)
-        val label = intent.getStringExtra(AlarmScheduler.EXTRA_ALARM_LABEL) ?: ""
+        label = intent.getStringExtra(AlarmScheduler.EXTRA_ALARM_LABEL) ?: ""
         val isSnooze = intent.getBooleanExtra(AlarmScheduler.EXTRA_ALARM_IS_SNOOZE, false)
-        val vibrate = intent.getBooleanExtra(AlarmScheduler.EXTRA_ALARM_VIBRATE, true)
+        vibrate = intent.getBooleanExtra(AlarmScheduler.EXTRA_ALARM_VIBRATE, true)
 
         startAlarmSound()
         if (vibrate) startVibration()
 
+        showAlarmRingScreen()
+    }
+
+    private fun showAlarmRingScreen() {
         setContent {
             AlarmTheme {
                 AlarmRingScreen(
                     label = label,
                     onDismiss = {
-                        handleDismiss()
+                        showMathChallenge()
                     },
                     onSnooze = {
                         handleSnooze()
@@ -61,6 +69,28 @@ class AlarmRingActivity : ComponentActivity() {
                 )
             }
         }
+    }
+
+    private fun showMathChallenge() {
+        stopAlarm()
+        setContent {
+            AlarmTheme {
+                MathChallengeScreen(
+                    onDismiss = {
+                        handleDismiss()
+                    },
+                    onTimerExpired = {
+                        restartAlarm()
+                    }
+                )
+            }
+        }
+    }
+
+    private fun restartAlarm() {
+        startAlarmSound()
+        if (vibrate) startVibration()
+        showAlarmRingScreen()
     }
 
     private fun handleDismiss() {
